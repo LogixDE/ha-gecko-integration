@@ -16,6 +16,11 @@ from .oauth_implementation import GeckoPKCEOAuth2Implementation
 from .const import DOMAIN, OAUTH2_AUTHORIZE, OAUTH2_CLIENT_ID, OAUTH2_TOKEN
 from .coordinator import GeckoVesselCoordinator
 from .connection_manager import async_get_connection_manager
+from .client_patches import apply_client_patches
+
+# Fixes for gecko-iot-client that are not released yet (see client_patches.py).
+# Runs at import time, i.e. in Home Assistant's import executor, not the loop.
+apply_client_patches()
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 

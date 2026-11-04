@@ -230,7 +230,8 @@ class GeckoConnectionManager:
                 # awscrt is a native extension. Validate the loaded package
                 # before entering MQTT client construction so an old Python
                 # 3.14/aarch64 wheel cannot terminate Home Assistant.
-                ensure_aws_crt_compatible()
+                # Reads package metadata (file I/O): keep it off the event loop.
+                await self.hass.async_add_executor_job(ensure_aws_crt_compatible)
 
                 # Create transporter and client 
                 transporter = MqttTransporter(
@@ -347,7 +348,8 @@ class GeckoConnectionManager:
                 # Brief delay before reconnecting
                 await asyncio.sleep(RECONNECT_DELAY)
 
-                ensure_aws_crt_compatible()
+                # Reads package metadata (file I/O): keep it off the event loop.
+                await self.hass.async_add_executor_job(ensure_aws_crt_compatible)
                 
                 # Create new transporter and client with fresh URL
                 transporter = MqttTransporter(
@@ -431,7 +433,8 @@ class GeckoConnectionManager:
                 if new_url != connection.websocket_url:
                     connection.websocket_url = new_url
 
-                ensure_aws_crt_compatible()
+                # Reads package metadata (file I/O): keep it off the event loop.
+                await self.hass.async_add_executor_job(ensure_aws_crt_compatible)
 
                 # Re-instantiate transporter and gecko client with new token
                 transporter = MqttTransporter(
