@@ -17,6 +17,10 @@ jobs:
         uses: hacs/action@main
         with:
           category: integration
+          # Repository metadata checks (brand assets, description, issues
+          # tab, topics) only matter for the HACS default store. This fork
+          # is installed as a custom repository, so they are skipped.
+          ignore: "brands description issues topics"
 
       - name: Hassfest validation
         uses: home-assistant/actions/hassfest@master
