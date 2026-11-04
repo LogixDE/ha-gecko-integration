@@ -38,7 +38,10 @@ _LOGGER = logging.getLogger(__name__)
 _HVAC_ACTION_BY_STATUS = {
     TemperatureControlZoneStatus.IDLE: HVACAction.IDLE,
     TemperatureControlZoneStatus.HEATING: HVACAction.HEATING,
-    TemperatureControlZoneStatus.COOLING: HVACAction.COOLING,
+    # COOLING without heat pump means the water is above the set point and
+    # cools down by itself - nothing is running. Only HEAT_PUMP_COOLING is
+    # active cooling.
+    TemperatureControlZoneStatus.COOLING: HVACAction.IDLE,
     TemperatureControlZoneStatus.INVALID: HVACAction.IDLE,
     TemperatureControlZoneStatus.HEAT_PUMP_HEATING: HVACAction.HEATING,
     TemperatureControlZoneStatus.HEAT_PUMP_AND_HEATER_HEATING: HVACAction.HEATING,

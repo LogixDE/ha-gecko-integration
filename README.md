@@ -174,7 +174,7 @@ The integration creates multiple entity types for comprehensive spa control:
   Extra attributes:
   | Attribute | Meaning |
   |-----------|---------|
-  | `hvac_action` | `heating`, `cooling`, `defrosting` or `idle`, mapped from the full device status (incl. heat pump states) |
+  | `hvac_action` | `heating`, `cooling` (heat pump actively cooling), `defrosting` or `idle`, mapped from the full device status. Water that is above the set point and cools down by itself shows as `idle` |
   | `heat_source` | `heat_pump`, `electric`, `heat_pump_and_electric` or `none` |
   | `heat_pump_error` | `true` when the device reports a heat pump fault |
   | `eco_mode` | Eco flag of the temperature zone |

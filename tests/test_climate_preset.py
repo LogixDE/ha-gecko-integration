@@ -90,3 +90,18 @@ async def test_watercare_change_refreshes_entities(hass, network):
         await hass.async_block_till_done()
 
     set_updated.assert_called_once()
+
+
+async def test_passive_cooling_is_idle_but_heat_pump_cooling_is_cooling(hass, network):
+    from homeassistant.components.climate import HVACAction
+    from gecko_iot_client.models.temperature_control_zone import TemperatureControlZoneStatus
+
+    climate, _coordinator, _client, _published = await _thermostat(hass, network)
+
+    climate._zone.status_ = TemperatureControlZoneStatus.COOLING
+    climate._update_from_zone()
+    assert climate.hvac_action == HVACAction.IDLE
+
+    climate._zone.status_ = TemperatureControlZoneStatus.HEAT_PUMP_COOLING
+    climate._update_from_zone()
+    assert climate.hvac_action == HVACAction.COOLING
