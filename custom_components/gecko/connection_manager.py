@@ -16,10 +16,6 @@ from homeassistant.core import Event, HomeAssistant
 from homeassistant.helpers.singleton import singleton
 from homeassistant.util.hass_dict import HassKey
 
-from gecko_iot_client.models.events import EventChannel
-from gecko_iot_client import GeckoIotClient
-from gecko_iot_client.transporters.mqtt import MqttTransporter
-
 from .aws_compat import ensure_aws_crt_compatible
 from .connectivity import (
     is_fully_connected as connectivity_is_fully_connected,
