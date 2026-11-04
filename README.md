@@ -215,7 +215,7 @@ The integration creates multiple entity types for comprehensive spa control:
 - `sensor.spa_name_spa_co_firmware_version` - Spa (CO) firmware version
 - `sensor.spa_name_spa_co_serial_number` - Spa (CO) serial number
 - `sensor.spa_name_raw_api_data` - credential-redacted raw API payloads for debugging (disabled by default)
-- `sensor.spa_name_water_temperature_1_flow_status` - Raw spa flow status such as `OK`
+- `sensor.spa_name_water_temperature_1_flow_status` - Flow status: `OK`, `Flow check in progress` (code `IP`) or `Other`; the raw code is in the `raw_code` attribute (German translation included)
 - `sensor.spa_name_water_temperature_1_status` - Temperature zone status (`HEATING`, `HEAT_PUMP_HEATING`, `COOLING`, …)
 - `sensor.spa_name_pump_1_speed_mode` - Speed mode per pump / waterfall (`off`, `low`, `high`, …; `on` for single-speed pumps)
 
@@ -244,7 +244,7 @@ On top of the official integration (2.1.1), this build contains:
 | upstream [#54](https://github.com/geckoal/ha-gecko-integration/pull/54) (Marek O) | Fixes Auth0 "Callback URL mismatch" |
 | upstream [#56](https://github.com/geckoal/ha-gecko-integration/pull/56), [#57](https://github.com/geckoal/ha-gecko-integration/pull/57), [#60](https://github.com/geckoal/ha-gecko-integration/pull/60) (Fabian Harder) | Eco mode attribute, RGB color / brightness / effects, heat source and heat pump error, correct HVAC action mapping |
 | gecko-iot-client [#11](https://github.com/geckoal/gecko-iot-client/pull/11), [#12](https://github.com/geckoal/gecko-iot-client/pull/12), [#13](https://github.com/geckoal/gecko-iot-client/pull/13) | Applied at runtime to gecko-iot-client 1.0.3 (`client_patches.py`): speed presets for multi-speed pumps, JSON-safe `set_color()`, "Super Savings" watercare mode accepted |
-| this build | Watercare mode as thermostat preset, pumps show their real running state again, single-speed pumps are on/off only, AWS CRT check moved off the event loop |
+| this build | Readable flow status, watercare mode as thermostat preset (updates instantly), pumps show their real running state again, single-speed pumps are on/off only, AWS CRT check moved off the event loop |
 
 ### Known limitations
 

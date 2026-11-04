@@ -152,8 +152,11 @@ class GeckoWatercareSelectEntity(GeckoEntityAvailabilityMixin, CoordinatorEntity
                 
             _LOGGER.debug("Setting operation mode to %s for vessel %s", option, self._vessel_name)
             
-            # Use the clean API to set the mode by name
-            gecko_client.operation_mode_controller.set_mode_by_name(option)
+            # Publishing blocks until MQTT delivery is confirmed: keep it off
+            # the event loop.
+            await self.hass.async_add_executor_job(
+                gecko_client.operation_mode_controller.set_mode_by_name, option
+            )
             
             # Let the coordinator update handle state changes
             _LOGGER.debug("Sent watercare mode command for %s", self._attr_name)

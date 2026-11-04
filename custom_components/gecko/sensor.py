@@ -322,10 +322,21 @@ class GeckoTemperatureFlowStatusSensor(
     CoordinatorEntity[GeckoVesselCoordinator],
     SensorEntity,
 ):
-    """Expose the raw Gecko flow status for a temperature-control zone."""
+    """Expose the flow status of a temperature-control zone.
+
+    The shadow reports short codes in ``flo_``. Known codes are translated:
+    ``OK`` (flow fine) and ``IP`` (flow check in progress - observed while
+    the spa runs its check-flow cycle, initiator ``CF``). Unknown codes show
+    as ``other``; the raw code is always available as ``raw_code``.
+    """
 
     _attr_has_entity_name = True
     _attr_icon = "mdi:waves-arrow-right"
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = ["ok", "flow_check", "other"]
+    _attr_translation_key = "flow_status"
+
+    _CODE_TO_STATE = {"OK": "ok", "IP": "flow_check"}
 
     def __init__(
         self,
@@ -349,16 +360,24 @@ class GeckoTemperatureFlowStatusSensor(
         self._update_from_coordinator()
 
     def _update_from_coordinator(self) -> None:
-        """Update the raw flow status from the latest shadow."""
-        self._attr_native_value = get_temperature_flow_status(
+        """Update the flow status from the latest shadow."""
+        raw_code = get_temperature_flow_status(
             self._zone,
             self.coordinator.get_spa_state(),
         )
+        self._raw_code = raw_code
+        if raw_code is None:
+            self._attr_native_value = None
+        else:
+            self._attr_native_value = self._CODE_TO_STATE.get(
+                str(raw_code).strip().upper(), "other"
+            )
 
     @property
     def extra_state_attributes(self) -> dict[str, str]:
         """Return the raw shadow field used for this zone."""
         return {
+            "raw_code": self._raw_code,
             "source_field": (
                 "MQTT shadow: state.reported.zones.temperatureControl."
                 f"{self._zone.id}.flo_"

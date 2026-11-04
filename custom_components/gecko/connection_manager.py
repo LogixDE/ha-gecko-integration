@@ -172,8 +172,15 @@ class GeckoConnectionManager:
                         e,
                     )
 
+        def on_operation_mode_update(_operation_mode_status):
+            # A watercare mode change touches no zone, so no zone update
+            # follows it. Push the current zones through the same callbacks so
+            # every entity showing the mode (select, thermostat preset) refreshes.
+            on_zone_update(gecko_client.get_zones())
+
         gecko_client.on_zone_update(on_zone_update)
         gecko_client.on(EventChannel.CONNECTIVITY_UPDATE, on_connectivity_update)
+        gecko_client.on(EventChannel.OPERATION_MODE_UPDATE, on_operation_mode_update)
         gecko_client.transporter.on_configuration_loaded(on_configuration_update)
         gecko_client.transporter.on_state_loaded(on_state_update)
         gecko_client.transporter.on_state_change(on_state_update)

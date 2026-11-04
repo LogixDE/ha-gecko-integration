@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -70,3 +72,21 @@ async def test_thermostat_rejects_unknown_preset(hass, network):
 
     with pytest.raises(ServiceValidationError):
         await climate.async_set_preset_mode("Other")
+
+
+async def test_watercare_change_refreshes_entities(hass, network):
+    """A watercare mode change (no zone change) still updates coordinator listeners."""
+    _climate, coordinator, _client, _published = await _thermostat(hass, network)
+    # Let the zone update scheduled during setup run first.
+    for _ in range(5):
+        await asyncio.sleep(0)
+    await hass.async_block_till_done()
+
+    with patch.object(coordinator, "async_set_updated_data") as set_updated:
+        network.clients[-1].emit_operation_mode()
+        # The update is handed to the loop with run_coroutine_threadsafe.
+        for _ in range(5):
+            await asyncio.sleep(0)
+        await hass.async_block_till_done()
+
+    set_updated.assert_called_once()

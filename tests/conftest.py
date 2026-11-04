@@ -93,6 +93,7 @@ class FakeGeckoClient:
         self.zones_on_connect = None
         self._zone_callbacks: list[Callable] = []
         self._connectivity_callbacks: list[Callable] = []
+        self._operation_mode_callbacks: list[Callable] = []
 
     # --- the surface the integration uses ---------------------------------
     def on_zone_update(self, callback: Callable) -> None:
@@ -101,6 +102,15 @@ class FakeGeckoClient:
     def on(self, channel, callback: Callable) -> None:
         if channel == EventChannel.CONNECTIVITY_UPDATE:
             self._connectivity_callbacks.append(callback)
+        elif channel == EventChannel.OPERATION_MODE_UPDATE:
+            self._operation_mode_callbacks.append(callback)
+
+    def get_zones(self):
+        return dict(self.zones_on_connect or {})
+
+    def emit_operation_mode(self, status=None) -> None:
+        for callback in list(self._operation_mode_callbacks):
+            callback(status)
 
     def off(self, channel, callback: Callable) -> None:
         if channel == EventChannel.CONNECTIVITY_UPDATE and callback in self._connectivity_callbacks:

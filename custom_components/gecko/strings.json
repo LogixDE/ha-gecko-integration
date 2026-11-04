@@ -58,6 +58,14 @@
       },
       "vessel_status": {
         "name": "Spa Status"
+      },
+      "flow_status": {
+        "name": "Flow Status",
+        "state": {
+          "ok": "OK",
+          "flow_check": "Flow check in progress",
+          "other": "Other (see raw_code)"
+        }
       }
     },
     "select": {
