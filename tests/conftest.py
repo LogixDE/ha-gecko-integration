@@ -65,6 +65,18 @@ class FakeTransporter:
         self.broker_url = broker_url
         self.monitor_id = monitor_id
         self._token_refresh_callback = token_refresh_callback
+        self.configuration_callbacks: list[Callable] = []
+        self.state_callbacks: list[Callable] = []
+
+    # Raw configuration/state hooks the integration registers (PR #37).
+    def on_configuration_loaded(self, callback: Callable) -> None:
+        self.configuration_callbacks.append(callback)
+
+    def on_state_loaded(self, callback: Callable) -> None:
+        self.state_callbacks.append(callback)
+
+    def on_state_change(self, callback: Callable) -> None:
+        self.state_callbacks.append(callback)
 
 
 class FakeGeckoClient:
