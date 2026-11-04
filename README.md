@@ -31,6 +31,7 @@
 - **Heat source:** heat pump, electric or both
 - **Heat pump error** detection
 - **Eco mode** status
+- **Watercare mode as preset** right in the thermostat
 
 </td>
 <td width="33%" valign="top">
@@ -166,6 +167,10 @@ The integration creates multiple entity types for comprehensive spa control:
 **Climate Entity:**
 - `climate.spa_name_thermostat_1` - Main temperature control
 
+  Presets: the watercare mode (`Away`, `Standard`, `Savings`, `Super Savings`,
+  `Weekender`) can be chosen directly in the thermostat. It is the same setting as the
+  watercare mode select entity.
+
   Extra attributes:
   | Attribute | Meaning |
   |-----------|---------|
@@ -239,7 +244,7 @@ On top of the official integration (2.1.1), this build contains:
 | upstream [#54](https://github.com/geckoal/ha-gecko-integration/pull/54) (Marek O) | Fixes Auth0 "Callback URL mismatch" |
 | upstream [#56](https://github.com/geckoal/ha-gecko-integration/pull/56), [#57](https://github.com/geckoal/ha-gecko-integration/pull/57), [#60](https://github.com/geckoal/ha-gecko-integration/pull/60) (Fabian Harder) | Eco mode attribute, RGB color / brightness / effects, heat source and heat pump error, correct HVAC action mapping |
 | gecko-iot-client [#11](https://github.com/geckoal/gecko-iot-client/pull/11), [#12](https://github.com/geckoal/gecko-iot-client/pull/12), [#13](https://github.com/geckoal/gecko-iot-client/pull/13) | Applied at runtime to gecko-iot-client 1.0.3 (`client_patches.py`): speed presets for multi-speed pumps, JSON-safe `set_color()`, "Super Savings" watercare mode accepted |
-| this build | Pumps show their real running state again, single-speed pumps are on/off only, AWS CRT check moved off the event loop |
+| this build | Watercare mode as thermostat preset, pumps show their real running state again, single-speed pumps are on/off only, AWS CRT check moved off the event loop |
 
 ### Known limitations
 

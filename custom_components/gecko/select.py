@@ -11,22 +11,13 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import DOMAIN, WATERCARE_MODE_OPTIONS
 from .coordinator import GeckoVesselCoordinator
 from .entity import GeckoEntityAvailabilityMixin
 from . import GeckoConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
 
-# Map operation modes to user-friendly names (matches OperationModeController.mode_name)
-WATERCARE_MODE_OPTIONS = [
-    "Away",
-    "Standard", 
-    "Savings",
-    "Super Savings",
-    "Weekender",
-    "Other"
-]
 
 
 async def async_setup_entry(

@@ -18,7 +18,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import DOMAIN, WATERCARE_SELECTABLE_MODES
 from .coordinator import GeckoVesselCoordinator
 from .entity import GeckoEntityAvailabilityMixin, GeckoZoneEntityMixin
 from . import GeckoConfigEntry
@@ -124,12 +124,19 @@ class GeckoClimate(GeckoZoneEntityMixin, GeckoEntityAvailabilityMixin, Coordinat
     - heat_pump_error: True when the device reports
       TemperatureControlZoneStatus.HEAT_PUMP_ERROR. HVACAction has no
       "error" value, so this status would otherwise look like IDLE.
+
+    The spa's watercare mode (Away, Standard, Savings, Super Savings,
+    Weekender) is offered as preset mode, so it can be changed right from
+    the thermostat. It is the same setting as the Watercare Mode select.
     """
     
     _attr_has_entity_name = True
     _zone_type = ZoneType.TEMPERATURE_CONTROL_ZONE
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
-    _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
+    _attr_supported_features = (
+        ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.PRESET_MODE
+    )
+    _attr_preset_modes = list(WATERCARE_SELECTABLE_MODES)
     _attr_hvac_modes = [HVACMode.HEAT]
     _attr_hvac_mode = HVACMode.HEAT
     _attr_target_temperature_step = 0.5
@@ -218,6 +225,36 @@ class GeckoClimate(GeckoZoneEntityMixin, GeckoEntityAvailabilityMixin, Coordinat
                 "Error setting temperature for %s: %s", self.entity_id, err
             )
     
+    @property
+    def preset_mode(self) -> str | None:
+        """Return the current watercare mode."""
+        gecko_client = self._get_gecko_client_sync()
+        controller = getattr(gecko_client, "operation_mode_controller", None)
+        if controller is None:
+            return None
+        mode_name = controller.mode_name
+        return mode_name if mode_name in WATERCARE_SELECTABLE_MODES else None
+
+    async def async_set_preset_mode(self, preset_mode: str) -> None:
+        """Set the watercare mode."""
+        if preset_mode not in WATERCARE_SELECTABLE_MODES:
+            raise ServiceValidationError(
+                f"Unsupported preset mode: {preset_mode}",
+                translation_domain=DOMAIN,
+                translation_key="unsupported_preset_mode",
+            )
+
+        gecko_client = await self.coordinator.get_gecko_client()
+        controller = getattr(gecko_client, "operation_mode_controller", None)
+        if controller is None:
+            _LOGGER.error("Watercare mode cannot be set for %s: no connection", self.entity_id)
+            return
+
+        # Publishing blocks until MQTT delivery is confirmed: keep it off the loop.
+        await self.hass.async_add_executor_job(controller.set_mode_by_name, preset_mode)
+        _LOGGER.debug("Set watercare mode to %s for %s", preset_mode, self.entity_id)
+        await self.coordinator.async_request_refresh()
+
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Set new target hvac mode."""
         if hvac_mode != HVACMode.HEAT:

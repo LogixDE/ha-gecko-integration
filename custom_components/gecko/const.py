@@ -39,3 +39,16 @@ OAUTH2_TOKEN = f"{AUTH0_URL_BASE}/oauth/token"
 
 # Client configuration
 CONFIG_TIMEOUT = 30.0  # Default timeout for GeckoIotClient configuration loading in seconds
+
+
+# Watercare (operation) modes, named like OperationModeController.mode_name.
+WATERCARE_MODE_OPTIONS = [
+    "Away",
+    "Standard",
+    "Savings",
+    "Super Savings",
+    "Weekender",
+    "Other",
+]
+# Modes a user can choose; "Other" only reports unknown device modes.
+WATERCARE_SELECTABLE_MODES = WATERCARE_MODE_OPTIONS[:-1]
