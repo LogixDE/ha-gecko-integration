@@ -23,9 +23,46 @@ from .coordinator import GeckoVesselCoordinator
 from .entity import GeckoEntityAvailabilityMixin, GeckoZoneEntityMixin
 from . import GeckoConfigEntry
 from gecko_iot_client.models.zone_types import ZoneType
-from gecko_iot_client.models.temperature_control_zone import TemperatureControlZone
+from gecko_iot_client.models.temperature_control_zone import (
+    TemperatureControlZone,
+    TemperatureControlZoneStatus,
+)
 
 _LOGGER = logging.getLogger(__name__)
+
+# Maps the device's granular status to Home Assistant's HVACAction.
+# TemperatureControlZoneStatus.HEAT_PUMP_ERROR has no HVACAction
+# equivalent (HVACAction has no "error" value), so it's mapped to IDLE
+# here and surfaced separately instead - see the heat_pump_error extra
+# state attribute below.
+_HVAC_ACTION_BY_STATUS = {
+    TemperatureControlZoneStatus.IDLE: HVACAction.IDLE,
+    TemperatureControlZoneStatus.HEATING: HVACAction.HEATING,
+    TemperatureControlZoneStatus.COOLING: HVACAction.COOLING,
+    TemperatureControlZoneStatus.INVALID: HVACAction.IDLE,
+    TemperatureControlZoneStatus.HEAT_PUMP_HEATING: HVACAction.HEATING,
+    TemperatureControlZoneStatus.HEAT_PUMP_AND_HEATER_HEATING: HVACAction.HEATING,
+    TemperatureControlZoneStatus.HEAT_PUMP_COOLING: HVACAction.COOLING,
+    TemperatureControlZoneStatus.HEAT_PUMP_DEFROSTING: HVACAction.DEFROSTING,
+    TemperatureControlZoneStatus.HEAT_PUMP_ERROR: HVACAction.IDLE,
+}
+
+# Maps the device's granular status to a plain-language heat source,
+# for the heat_source extra state attribute below - lets automations
+# and dashboards distinguish pure electric heating from heat-pump
+# (potentially combined with electric) heating, which HVACAction alone
+# can't express.
+_HEAT_SOURCE_BY_STATUS = {
+    TemperatureControlZoneStatus.IDLE: "none",
+    TemperatureControlZoneStatus.HEATING: "electric",
+    TemperatureControlZoneStatus.COOLING: "none",
+    TemperatureControlZoneStatus.INVALID: "none",
+    TemperatureControlZoneStatus.HEAT_PUMP_HEATING: "heat_pump",
+    TemperatureControlZoneStatus.HEAT_PUMP_AND_HEATER_HEATING: "heat_pump_and_electric",
+    TemperatureControlZoneStatus.HEAT_PUMP_COOLING: "heat_pump",
+    TemperatureControlZoneStatus.HEAT_PUMP_DEFROSTING: "heat_pump",
+    TemperatureControlZoneStatus.HEAT_PUMP_ERROR: "none",
+}
 
 
 async def async_setup_entry(
@@ -77,11 +114,16 @@ async def async_setup_entry(
 class GeckoClimate(GeckoZoneEntityMixin, GeckoEntityAvailabilityMixin, CoordinatorEntity[GeckoVesselCoordinator], ClimateEntity):
     """Representation of a Gecko climate control.
 
-    Also surfaces the zone's eco mode (zone.mode.eco) as a read-only
-    extra state attribute. The underlying TemperatureControlZone model
-    only exposes eco mode for reading - there is no set_eco()/similar
-    method to change it via the API - so it is not offered as a
-    settable preset, which would imply control that doesn't exist.
+    Extra read-only state attributes (gecko_iot_client offers no setter
+    for any of them):
+
+    - eco_mode: the zone's eco flag (zone.mode.eco).
+    - heat_source: "electric", "heat_pump", "heat_pump_and_electric",
+      or "none" - tells a heat-pump-driven heating cycle apart from a
+      purely electric one, which HVACAction.HEATING alone doesn't.
+    - heat_pump_error: True when the device reports
+      TemperatureControlZoneStatus.HEAT_PUMP_ERROR. HVACAction has no
+      "error" value, so this status would otherwise look like IDLE.
     """
     
     _attr_has_entity_name = True
@@ -122,30 +164,26 @@ class GeckoClimate(GeckoZoneEntityMixin, GeckoEntityAvailabilityMixin, Coordinat
         if zone is None:
             # Not on the current client: keep the last known state.
             return
-        if zone.status:
-            self._attr_hvac_action = (
-                HVACAction.HEATING if zone.status.is_heating else HVACAction.IDLE
-            )
-        else:
-            self._attr_hvac_action = HVACAction.IDLE
-        
+        status = zone.status
+        self._attr_hvac_action = _HVAC_ACTION_BY_STATUS.get(status, HVACAction.IDLE)
+
+        self._attr_extra_state_attributes = {
+            "eco_mode": zone.mode.eco if zone.mode else None,
+            "heat_source": _HEAT_SOURCE_BY_STATUS.get(status, "none"),
+            "heat_pump_error": status == TemperatureControlZoneStatus.HEAT_PUMP_ERROR,
+        }
+
         self._attr_current_temperature = zone.temperature
         self._attr_target_temperature = zone.target_temperature
         self._attr_max_temp = zone.max_temperature_set_point_c
         self._attr_min_temp = zone.min_temperature_set_point_c
 
-        # Eco mode is read-only in the underlying model (see class
-        # docstring), so it is surfaced as an extra state attribute
-        # rather than a settable preset.
-        self._attr_extra_state_attributes = {
-            "eco_mode": zone.mode.eco if zone.mode else None,
-        }
-
         _LOGGER.debug(
-            "Zone %s: current=%s°C, target=%s°C",
+            "Zone %s: current=%s°C, target=%s°C, status=%s",
             zone.id,
             self._attr_current_temperature,
             self._attr_target_temperature,
+            status,
         )
     
     @callback
