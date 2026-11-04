@@ -47,6 +47,7 @@
 ### 💨 Pumps & Fans
 - Pumps, blowers and waterfalls
 - Speed presets for multi-speed pumps
+- Single-speed pumps: plain on/off
 - **Real running state**, including automatic runs
 - **Filtration-safe:** turn-off never interrupts filtration, heating or flow check
 
@@ -184,6 +185,9 @@ The integration creates multiple entity types for comprehensive spa control:
 - `fan.spa_name_pump_2` - Jet pump
 - `fan.spa_name_waterfall` - Waterfall
 
+  Speeds are only offered when the pump supports them. Single-speed pumps (configured
+  speed range with minimum = maximum) are plain on/off switches.
+
   The fan state shows whether the pump is **physically running**, whatever started it.
   Turning a pump off is ignored while the spa itself needs the flow (filtration,
   heating, heat pump, flow check), so automations cannot interrupt those cycles.
@@ -208,7 +212,7 @@ The integration creates multiple entity types for comprehensive spa control:
 - `sensor.spa_name_raw_api_data` - credential-redacted raw API payloads for debugging (disabled by default)
 - `sensor.spa_name_water_temperature_1_flow_status` - Raw spa flow status such as `OK`
 - `sensor.spa_name_water_temperature_1_status` - Temperature zone status (`HEATING`, `HEAT_PUMP_HEATING`, `COOLING`, …)
-- `sensor.spa_name_pump_1_speed_mode` - Speed mode per pump / waterfall (`off`, `low`, `high`, …)
+- `sensor.spa_name_pump_1_speed_mode` - Speed mode per pump / waterfall (`off`, `low`, `high`, …; `on` for single-speed pumps)
 
 **Binary Sensors:**
 - `binary_sensor.spa_name_gateway_status` - Gateway online
@@ -235,7 +239,7 @@ On top of the official integration (2.1.1), this build contains:
 | upstream [#54](https://github.com/geckoal/ha-gecko-integration/pull/54) (Marek O) | Fixes Auth0 "Callback URL mismatch" |
 | upstream [#56](https://github.com/geckoal/ha-gecko-integration/pull/56), [#57](https://github.com/geckoal/ha-gecko-integration/pull/57), [#60](https://github.com/geckoal/ha-gecko-integration/pull/60) (Fabian Harder) | Eco mode attribute, RGB color / brightness / effects, heat source and heat pump error, correct HVAC action mapping |
 | gecko-iot-client [#11](https://github.com/geckoal/gecko-iot-client/pull/11), [#12](https://github.com/geckoal/gecko-iot-client/pull/12), [#13](https://github.com/geckoal/gecko-iot-client/pull/13) | Applied at runtime to gecko-iot-client 1.0.3 (`client_patches.py`): speed presets for multi-speed pumps, JSON-safe `set_color()`, "Super Savings" watercare mode accepted |
-| this build | Pumps show their real running state again, AWS CRT check moved off the event loop |
+| this build | Pumps show their real running state again, single-speed pumps are on/off only, AWS CRT check moved off the event loop |
 
 ### Known limitations
 
@@ -243,7 +247,8 @@ On top of the official integration (2.1.1), this build contains:
   changed in the Gecko app, but not through this integration. Gecko's third-party cloud
   session only grants access to the `state` shadow, which does not contain this setting.
   The current heat source is visible via the climate entity's `heat_source` attribute.
-- **Eco mode** is read-only for the same reason.
+- **Eco mode** is read-only. The spa derives it from the watercare mode, so change the
+  watercare mode (select entity) instead.
 
 ---
 

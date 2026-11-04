@@ -25,6 +25,7 @@ from .telemetry import (
     get_supported_flow_speed_modes,
     is_checkflow_active,
     is_filtration_flow_active,
+    is_fixed_speed_flow_zone,
     is_flow_safe_to_deactivate,
     is_user_controlled_flow_active,
 )
@@ -101,7 +102,12 @@ class GeckoFan(GeckoZoneEntityMixin, GeckoEntityAvailabilityMixin, CoordinatorEn
             FanEntityFeature.TURN_OFF | FanEntityFeature.TURN_ON 
         )
 
-        if self._zone.speed is not None or FlowZoneCapabilities.SUPPORTS_SPEED_PRESETS in self._zone.capabilities:
+        # Single-speed pumps (speed range minimum == maximum) only switch on
+        # and off; offering speeds for them would suggest control they lack.
+        if not is_fixed_speed_flow_zone(self._zone) and (
+            self._zone.speed is not None
+            or FlowZoneCapabilities.SUPPORTS_SPEED_PRESETS in self._zone.capabilities
+        ):
             self._attr_supported_features |= FanEntityFeature.SET_SPEED
             self._speed_list = list(get_supported_flow_speed_modes(self._zone))
             self._attr_speed_list = self._speed_list
@@ -186,6 +192,13 @@ class GeckoFan(GeckoZoneEntityMixin, GeckoEntityAvailabilityMixin, CoordinatorEn
     async def async_turn_on(self, percentage: int | None = None, preset_mode: str | None = None, **kwargs) -> None:
         """Turn the fan on. Optionally set speed by percentage."""
         _LOGGER.debug("Turning on pump %s", self._attr_name)
+        if not self._attr_supported_features & FanEntityFeature.SET_SPEED:
+            zone = self._current_zone()
+            if zone is None:
+                _LOGGER.warning("Could not find pump zone %s", self._zone.id)
+                return
+            await self.hass.async_add_executor_job(zone.activate)
+            return
         speed = get_flow_speed_mode_for_percentage(self._zone, percentage)
         await self.async_set_speed(speed)
 

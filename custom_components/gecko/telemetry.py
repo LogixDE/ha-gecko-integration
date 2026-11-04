@@ -10,6 +10,9 @@ from gecko_iot_client.models.flow_zone import FlowZoneInitiator
 from gecko_iot_client.models.zone_types import ZoneType
 
 FLOW_SPEED_MODE_OPTIONS: tuple[str, ...] = ("off", "low", "medium", "high", "max")
+# Speed mode sensor states: the selectable modes plus "on" for pumps that
+# only run at one fixed speed.
+FLOW_SPEED_SENSOR_OPTIONS: tuple[str, ...] = (*FLOW_SPEED_MODE_OPTIONS, "on")
 USER_FLOW_INITIATORS: frozenset[str] = frozenset(
     {
         FlowZoneInitiator.USER_DEMAND.name,
@@ -506,9 +509,23 @@ def get_flow_speed_step_values(zone: Any) -> tuple[float, ...]:
     return tuple(values)
 
 
+def is_fixed_speed_flow_zone(zone: Any) -> bool:
+    """Return True when the configured speed range allows a single speed only.
+
+    Single-speed pumps are configured like {"minimum": 100, "maximum": 100,
+    "stepIncrement": 0}. They can only be switched on and off.
+    """
+    speed_config = getattr(zone, "speed_config", None)
+    if not isinstance(speed_config, dict):
+        return False
+    minimum = _as_float(speed_config.get("minimum"))
+    maximum = _as_float(speed_config.get("maximum"))
+    return minimum is not None and maximum is not None and maximum <= minimum
+
+
 def _reports_binary_near_max_speed_encoding(zone: Any) -> bool:
     """Return True when Gecko reports low/high as 99/100 style values."""
-    if get_flow_speed_step_values(zone):
+    if is_fixed_speed_flow_zone(zone) or get_flow_speed_step_values(zone):
         return False
 
     speed = _as_float(getattr(zone, "speed", None))
@@ -530,6 +547,9 @@ def _get_mode_label_for_step_index(step_index: int, step_count: int) -> str:
 
 def get_supported_flow_speed_modes(zone: Any) -> tuple[str, ...]:
     """Return the HA speed labels supported by this flow zone."""
+    if is_fixed_speed_flow_zone(zone):
+        return ()
+
     step_values = get_flow_speed_step_values(zone)
     if step_values:
         ordered_modes: list[str] = []
@@ -778,6 +798,9 @@ def derive_flow_speed_mode(zone: Any) -> str | None:
     """Convert Gecko flow speed telemetry into an HA-friendly mode."""
     if not getattr(zone, "active", False):
         return "off"
+
+    if is_fixed_speed_flow_zone(zone):
+        return "on"
 
     speed = _as_float(getattr(zone, "speed", None))
     if speed is None:

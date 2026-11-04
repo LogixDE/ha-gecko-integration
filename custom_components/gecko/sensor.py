@@ -29,7 +29,7 @@ from .const import DOMAIN
 from .coordinator import GeckoVesselCoordinator
 from .entity import GeckoEntityAvailabilityMixin
 from .telemetry import (
-    FLOW_SPEED_MODE_OPTIONS,
+    FLOW_SPEED_SENSOR_OPTIONS,
     derive_flow_speed_mode,
     get_flow_initiators,
     get_flow_manual_demand_reason,
@@ -381,7 +381,7 @@ class GeckoFlowSpeedModeSensor(
 
     _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.ENUM
-    _attr_options = FLOW_SPEED_MODE_OPTIONS
+    _attr_options = list(FLOW_SPEED_SENSOR_OPTIONS)
 
     def __init__(
         self,
