@@ -143,14 +143,12 @@ class GeckoFan(GeckoZoneEntityMixin, GeckoEntityAvailabilityMixin, CoordinatorEn
             self._speed_list = list(get_supported_flow_speed_modes(self._zone))
             self._attr_speed_list = self._speed_list
 
-        # A flow zone is also used by filtration, heating, purge and the spa's
-        # periodic check-flow routine.  Those automatic demands must not make
-        # the user-controllable fan appear switched on, otherwise automations
-        # that turn a fan back off can terminate the automatic demand.
-        self._attr_is_on = is_user_controlled_flow_active(
-            self._zone,
-            self._coordinator.get_spa_state(),
-        )
+        # The fan shows the physical pump state, whatever started the pump
+        # (user, filtration, heating, heat pump, check-flow). Turning it off
+        # while an automatic demand is active is refused in async_turn_off,
+        # so automations cannot interrupt filtration through this entity.
+        # Whether the user started the flow is exposed as "user_controlled".
+        self._attr_is_on = bool(self._zone.active)
         self._attr_percentage = (
             derive_flow_percentage(self._zone) if self._attr_is_on else 0
         )
@@ -164,6 +162,7 @@ class GeckoFan(GeckoZoneEntityMixin, GeckoEntityAvailabilityMixin, CoordinatorEn
         spa_state = self._coordinator.get_spa_state()
         initiators = get_flow_initiators(self._zone, spa_state)
         return {
+            "user_controlled": is_user_controlled_flow_active(self._zone, spa_state),
             "physical_active": bool(self._zone.active),
             "physical_percentage": derive_flow_percentage(self._zone),
             "physical_speed": derive_flow_speed_mode(self._zone),

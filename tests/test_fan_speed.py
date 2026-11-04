@@ -40,3 +40,28 @@ async def test_active_pump_without_speed_updates(hass, network):
 
     write.assert_called_once()
     assert fan.is_on is True
+
+
+async def test_pump_running_for_filtration_shows_on_but_refuses_turn_off(hass, network):
+    """The fan reflects the physical pump; automatic demand blocks turn-off."""
+    entry = MockConfigEntry(domain=DOMAIN, entry_id="entry-1", data={})
+    entry.add_to_hass(hass)
+    entry.runtime_data = SimpleNamespace(api_client=None, coordinators=[])
+    coordinator = GeckoVesselCoordinator(hass, entry.entry_id, "vessel-1", MONITOR_ID, "Spa")
+    network.next_zones_on_connect = build_zones(
+        {"flow": {"1": {"active": True, "speed": 100, "initiators_": ["FILTRATION"]}}}
+    )
+    assert await coordinator.async_setup_monitor_connection("wss://first")
+    await hass.async_block_till_done()
+    zone = next(z for z in coordinator.get_zones_by_type(ZoneType.FLOW_ZONE) if z.id == "1")
+
+    fan = GeckoFan(coordinator, entry, zone)
+    with patch.object(fan, "async_write_ha_state"):
+        fan._handle_coordinator_update()
+
+    assert fan.is_on is True
+    assert fan.extra_state_attributes["user_controlled"] is False
+
+    with patch.object(zone, "deactivate") as deactivate:
+        await fan.async_turn_off()
+    deactivate.assert_not_called()
